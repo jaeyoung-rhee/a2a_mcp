@@ -144,7 +144,7 @@ graph TB
     Setup1 --> Setup2[Tool Bridge 연결]
     Setup2 --> Setup3[BigTool 설정]
     Setup3 --> Setup4[PostgreSQL 체크포인터]
-    Setup4 --> Setup5[LangMem 초기화]
+    Setup4 --> Setup5[LangMem 초기화<br/>📊 5가지 메모리 타입]
     Setup5 --> Setup6[그래프 컴파일]
     
     Setup6 --> Process[쿼리 처리 시작]
@@ -156,56 +156,86 @@ graph TB
     
     Analyze -->|Tool Required| StartNode[start_node]
     
-    StartNode --> Routing[routing_node복잡도 재확인]
+    StartNode --> Routing[routing_node<br/>복잡도 재확인]
     
     Routing --> Clarification{명확화 필요?}
     
-    Clarification -->|Yes| ClarifyAnalysis[task_clarification_analysis]
-    ClarifyAnalysis --> ClarifyApproval{승인 필요?}
+    Clarification -->|Yes| ClarifyAnalysis[task_clarification_analysis<br/>🧠 과거 명확화 검색]
+    ClarifyAnalysis --> ClarifyMemory{메모리 패턴?}
     
-    ClarifyApproval -->|Auto Apply| Planning
-    ClarifyApproval -->|Approval Required| ClarifyWait[__interrupt__사용자 승인 대기]
-    ClarifyWait --> ClarifyFeedback[process_clarification_feedback]
+    ClarifyMemory -->|High Confidence<br/>reuse≥5, conf≥0.9| AutoApply[자동 적용<br/>과거 응답 재사용]
+    AutoApply --> Planning
+    
+    ClarifyMemory -->|Suggestions<br/>reuse≥1| ClarifyApproval{승인 필요?}
+    ClarifyMemory -->|No Pattern| ClarifyApproval
+    
+    ClarifyApproval -->|Approval Required| ClarifyWait[__interrupt__<br/>💡 과거 제안 포함<br/>사용자 승인 대기]
+    ClarifyWait --> ClarifyFeedback[process_clarification_feedback<br/>📝 메모리 저장/업데이트]
     ClarifyFeedback --> Planning
     
-    Clarification -->|No| Planning[dynamic_planning단계별 계획 수립]
+    Clarification -->|No| Planning[dynamic_planning<br/>🧠 과거 성공 계획 검색]
     
-    Planning --> PlanApproval{계획 승인}
+    Planning --> PlanMemory{유사 계획?}
+    PlanMemory -->|Found<br/>score≥0.7| PlanPersonalize[계획 개인화<br/>단계 최적화]
+    PlanMemory -->|Not Found| PlanApproval
+    PlanPersonalize --> PlanApproval{계획 승인}
     
     PlanApproval -->|Auto| StepPrep
-    PlanApproval -->|Approval Required| PlanWait[__interrupt__계획 승인 대기]
+    PlanApproval -->|Approval Required| PlanWait[__interrupt__<br/>계획 승인 대기]
     PlanWait --> PlanFeedback[process_plan_feedback]
     PlanFeedback -->|Approved| StepPrep
     PlanFeedback -->|Edit| Planning
     PlanFeedback -->|Reject| Synthesis
     
-    StepPrep[step_preparation단계 준비 & 도구 분석] --> StepApproval{단계 승인}
+    StepPrep[step_preparation<br/>🧠 과거 도구 이력 검색<br/>도구 재정렬/회피] --> ToolMemory{도구 패턴?}
     
-    StepApproval -->|Auto| ToolExec
-    StepApproval -->|Approval Required| StepWait[__interrupt__단계 승인 대기]
-    StepWait --> StepFeedback[process_step_feedback]
+    ToolMemory -->|Success Pattern| ToolBoost[도구 점수 부스트<br/>최적 파라미터 적용]
+    ToolMemory -->|Failure Pattern| ToolAvoid[실패 도구 회피]
+    ToolMemory -->|No Pattern| StepApproval
+    
+    ToolBoost --> StepApproval{단계 승인}
+    ToolAvoid --> StepApproval
+    
+    StepApproval -->|Behavior Predict<br/>conf≥0.8| BehaviorCheck{예측 결과?}
+    BehaviorCheck -->|Accept| ToolExec
+    BehaviorCheck -->|Suggest| StepWait
+    
+    StepApproval -->|Approval Required| StepWait[__interrupt__<br/>🎯 행동 예측 포함<br/>단계 승인 대기]
+    StepWait --> StepFeedback[process_step_feedback<br/>📝 행동 패턴 임시 저장]
     StepFeedback -->|Approved| ToolExec
     StepFeedback -->|Edit| StepPrep
     StepFeedback -->|Skip| StepComplete
     
-    ToolExec[tool_executionBigTool + ReAct 실행] --> StepComplete[step_completion]
+    ToolExec[tool_execution<br/>BigTool + ReAct 실행] --> StepComplete[step_completion<br/>📊 결과 검증]
     
     StepComplete --> Continue{다음 단계?}
     
     Continue -->|Yes| StepPrep
-    Continue -->|No| Synthesis[synthesis최종 결과 종합]
+    Continue -->|No| Synthesis[synthesis<br/>최종 결과 종합]
     
-    Synthesis --> SaveResult[결과 저장JSON/Markdown]
+    Synthesis --> MemoryCollection[🧠 백그라운드 메모리 수집<br/>Plan/Tool/Behavior/Workflow]
+    MemoryCollection -.비동기.-> SaveResult[결과 저장<br/>JSON/Markdown]
     SaveResult --> End
     
     style Init fill:#e1f5ff
+    style Setup5 fill:#f3e5f5
+    style ClarifyAnalysis fill:#f3e5f5
+    style AutoApply fill:#c8e6c9
     style Planning fill:#fff4e1
+    style PlanPersonalize fill:#f3e5f5
+    style StepPrep fill:#f3e5f5
+    style ToolBoost fill:#c8e6c9
+    style ToolAvoid fill:#ffcdd2
     style ToolExec fill:#e8f5e9
     style Synthesis fill:#f3e5f5
+    style MemoryCollection fill:#f3e5f5
     style ClarifyWait fill:#ffebee
     style PlanWait fill:#ffebee
     style StepWait fill:#ffebee
     style End fill:#c8e6c9
+    
+    classDef memoryNode fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px
+    class ClarifyAnalysis,Planning,StepPrep,MemoryCollection memoryNode
 ```
 
 </details>
