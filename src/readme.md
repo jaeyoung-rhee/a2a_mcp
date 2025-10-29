@@ -134,7 +134,63 @@ def create_orchestrator_graph():
 ## 📊 노드별 상세 플로우
 
 <details>
-<summary>Agent 워크플로우 다이어그램</summary>
+<summary>Agent 워크플로우 다이어그램 (without Memory) </summary>
+
+```mermaid
+graph TB
+    START([START]) --> start[start 노드]
+    start --> routing[routing 노드]
+    
+    routing --> |simple_chat| synthesis[synthesis 노드]
+    routing --> |tool_required| clarif_analysis[task_clarification_analysis]
+    
+    clarif_analysis --> |needs_approval| clarif_approval[task_clarification_approval]
+    clarif_analysis --> |no_clarification_needed| planning[dynamic_planning]
+    
+    clarif_approval --> |clarified| planning
+    clarif_approval --> |pending| END1([END - 승인 대기])
+    clarif_approval --> |process_feedback| clarif_feedback[process_clarification_feedback]
+    
+    clarif_feedback --> |proceed| planning
+    clarif_feedback --> |retry| clarif_approval
+    
+    planning --> plan_approval[plan_approval]
+    
+    plan_approval --> |approved| step_prep[step_preparation]
+    plan_approval --> |pending| END2([END - 승인 대기])
+    plan_approval --> |process_feedback| plan_feedback[process_plan_feedback]
+    plan_approval --> |rejected| synthesis
+    
+    plan_feedback --> |approved| step_prep
+    plan_feedback --> |rejected| synthesis
+    plan_feedback --> |retry_approval| plan_approval
+    
+    step_prep --> step_approval[step_approval]
+    
+    step_approval --> |approved| tool_exec[tool_execution]
+    step_approval --> |pending| END3([END - 승인 대기])
+    step_approval --> |process_feedback| step_feedback[process_step_feedback]
+    
+    step_feedback --> |approved| tool_exec
+    step_feedback --> |retry_approval| step_approval
+    
+    tool_exec --> step_complete[step_completion]
+    step_complete --> check_continue[check_continue]
+    
+    check_continue --> |continue| step_prep
+    check_continue --> |finish| synthesis
+    
+    synthesis --> END4([END])
+    
+    style clarif_approval fill:#ffcccc
+    style plan_approval fill:#ffcccc
+    style step_approval fill:#ffcccc
+    style END1 fill:#ffffcc
+    style END2 fill:#ffffcc
+    style END3 fill:#ffffcc
+```
+
+</details>
 
 ```mermaid
 graph TB
@@ -236,62 +292,6 @@ graph TB
     
     classDef memoryNode fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px
     class ClarifyAnalysis,Planning,StepPrep,MemoryCollection memoryNode
-```
-
-</details>
-
-```mermaid
-graph TB
-    START([START]) --> start[start 노드]
-    start --> routing[routing 노드]
-    
-    routing --> |simple_chat| synthesis[synthesis 노드]
-    routing --> |tool_required| clarif_analysis[task_clarification_analysis]
-    
-    clarif_analysis --> |needs_approval| clarif_approval[task_clarification_approval]
-    clarif_analysis --> |no_clarification_needed| planning[dynamic_planning]
-    
-    clarif_approval --> |clarified| planning
-    clarif_approval --> |pending| END1([END - 승인 대기])
-    clarif_approval --> |process_feedback| clarif_feedback[process_clarification_feedback]
-    
-    clarif_feedback --> |proceed| planning
-    clarif_feedback --> |retry| clarif_approval
-    
-    planning --> plan_approval[plan_approval]
-    
-    plan_approval --> |approved| step_prep[step_preparation]
-    plan_approval --> |pending| END2([END - 승인 대기])
-    plan_approval --> |process_feedback| plan_feedback[process_plan_feedback]
-    plan_approval --> |rejected| synthesis
-    
-    plan_feedback --> |approved| step_prep
-    plan_feedback --> |rejected| synthesis
-    plan_feedback --> |retry_approval| plan_approval
-    
-    step_prep --> step_approval[step_approval]
-    
-    step_approval --> |approved| tool_exec[tool_execution]
-    step_approval --> |pending| END3([END - 승인 대기])
-    step_approval --> |process_feedback| step_feedback[process_step_feedback]
-    
-    step_feedback --> |approved| tool_exec
-    step_feedback --> |retry_approval| step_approval
-    
-    tool_exec --> step_complete[step_completion]
-    step_complete --> check_continue[check_continue]
-    
-    check_continue --> |continue| step_prep
-    check_continue --> |finish| synthesis
-    
-    synthesis --> END4([END])
-    
-    style clarif_approval fill:#ffcccc
-    style plan_approval fill:#ffcccc
-    style step_approval fill:#ffcccc
-    style END1 fill:#ffffcc
-    style END2 fill:#ffffcc
-    style END3 fill:#ffffcc
 ```
 
 ### 3.1 노드 구조
